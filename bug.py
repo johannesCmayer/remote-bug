@@ -49,12 +49,12 @@ def cmd_exec(command, working_dir=None, shell=True):
 def receive_msg(socket, end_msg_identifier=END_MSG_IDF):
     msg = ''
     while end_msg_identifier not in msg:
-        msg += socket.recv(1024).decode()
+        msg += socket.recv(1024).decode('utf-8')
     return msg[0:-len(end_msg_identifier)]
 
 
 def send_msg(socket, msg):
-    socket.send((msg + END_MSG_IDF).encode())
+    socket.send((msg + END_MSG_IDF).encode('utf-8').strip())
 
 
 def client_loop(sock):
