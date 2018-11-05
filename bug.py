@@ -6,6 +6,7 @@ import threading
 import os
 import traceback
 import random
+import atexit
 
 doc = """
 Usage:
@@ -16,42 +17,13 @@ Usage:
 Options:
     -p --port=<PORT>            [default: 4613]
     -P --password=<PASSWORD>    [default: 'NOPW']
+    -l --local                  Create a local server
     -h --help                   Display this
 """
 opt = docopt(doc)
 opt['--port'] = int(opt['--port'])
-
-
-def get_prime_generator(start_num=0):
-    if start_num <= 1:
-        yield 1
-    if start_num <= 2:
-        yield 2
-    i = max(start_num, 3)
-    j = 2
-    while True:
-        if j >= i:
-            yield i
-            j = 2
-            i += 1
-        if i % j == 0:
-            j = 2
-            i += 1
-        j += 1
-
-
-def get_random_prime(min_oof=5, max_oof=7):
-    if min_oof + 1 > max_oof:
-        raise Exception(f'The lower magnitude factor ({min_oof}) need to be at least one less that the maximum magnitude factor ({max_oof}).')
-    return next(get_prime_generator(random.randint(10**(min_oof), 10**(max_oof))))
-
-
-class RSACrypter:
-    def __init__(self):
-        self.message = 10
-        self.e = 45
-        self.d = 7
-        self.n = 47
+if opt['<host>'] == 'here':
+    opt['<host>'] = socket.gethostbyname(socket.gethostname())
 
 
 def read_in_required_args():
@@ -85,6 +57,38 @@ read_in_required_args()
 END_MSG_IDF = '<END>'
 PWD_DEFAULT = 'C:\\'
 PASS_CODE = f'<{opt["--password"]}a96o5uoae56u4aoe6u546aoe54u9ao4eu65a4oe8u4aoe541u98ao4eu51ao98eu46>'
+
+
+def get_prime_generator(start_num=0):
+    if start_num <= 1:
+        yield 1
+    if start_num <= 2:
+        yield 2
+    i = max(start_num, 3)
+    j = 2
+    while True:
+        if j >= i:
+            yield i
+            j = 2
+            i += 1
+        if i % j == 0:
+            j = 2
+            i += 1
+        j += 1
+
+
+def get_random_prime(min_oof=5, max_oof=7):
+    if min_oof + 1 > max_oof:
+        raise Exception(f'The lower magnitude factor ({min_oof}) need to be at least one less that the maximum magnitude factor ({max_oof}).')
+    return next(get_prime_generator(random.randint(10**(min_oof), 10**(max_oof))))
+
+
+class RSACrypter:
+    def __init__(self):
+        self.message = 10
+        self.e = 45
+        self.d = 7
+        self.n = 47
 
 
 def cmd_beep():
@@ -133,8 +137,8 @@ def client_loop(sock):
         command_msg = input(f'{pwd} $ ')
         send_msg(sock, command_msg)
         answer = receive_msg(sock)
-        if answer == 'server terminated':
-            print('Server terminated')
+        if answer == '<SHUTDOWN>':
+            print('Server was shutdown')
             sock.close()
             sys.exit(0)
         elif answer == 'disconnected' and command_msg == 'exit':
@@ -150,7 +154,7 @@ def client_loop(sock):
 
 def server_loop(client_sock):
     command_info = {
-        'terminate': 'terminate the server',
+        'shutdown': 'shutdown the server',
         'reconnect': 'reconnect to server',
         'beep': 'make a beep sound',
         'coninfo': 'display connection info',
@@ -165,10 +169,10 @@ def server_loop(client_sock):
             msg = receive_msg(client_sock)
             print(f'{msg} <- command received from {client_sock.getpeername()}')
             answer = ''
-            if msg == 'terminate':
-                send_msg(client_sock, 'server terminated')
+            if msg == 'shutdown':
+                send_msg(client_sock, '<SHUTDOWN>')
                 client_sock.close()
-                print('terminating programm')
+                print('terminating server')
                 os._exit(0)
             elif msg == 'reconnect' or msg == 'exit':
                 send_msg(client_sock, 'disconnected')
@@ -243,6 +247,7 @@ def run():
         while True:
             print(f'server listening')
             client_sock = sock.accept()[0]
+            atexit.register(lambda: send_msg(client_sock, '<SHUTDOWN>'))
             print(f'connection accepted from {client_sock.getpeername()}')
             print('authenticating')
             if receive_msg(client_sock) == PASS_CODE:
@@ -266,3 +271,6 @@ if __name__ == '__main__':
             run()
         except Exception as e:
             traceback.print_exception(type(e), e, e.__traceback__)
+            u_input = input('do you want to restart? y/n')
+            if u_input == 'n':
+                sys.exit(0)
