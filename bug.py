@@ -20,7 +20,7 @@ opt['--port'] = int(opt['--port'])
 
 END_MSG_IDF = '<END>'
 PWD_DEFAULT = 'C:\\'
-
+PASS_CODE = '<aoi416o8e4ia1oeuao1e86uau4ao5e4ua6oeu1a5au6oe4ua32o4eu5521a>'
 
 def cmd_beep():
     code = 'echo •'
@@ -46,8 +46,10 @@ def cmd_exec(command, working_dir=None, shell=True):
     try:
         return val.stdout.decode('unicode_escape', errors='strict')
     except Exception as e:
-        print('encoding error Occoured. Ignoring.')
-        return val.stdout.decode('unicode_escape', errors='ignore')
+        err_msg = f'!!! encoding error Occoured. Ignoring.\n' \
+                  f'!!! {str(e)}\n' \
+                  f'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n'
+        return err_msg + val.stdout.decode('unicode_escape', errors='ignore')
 
 def receive_msg(socket, end_msg_identifier=END_MSG_IDF):
     msg = ''
@@ -63,13 +65,17 @@ def send_msg(socket, msg):
 def client_loop(sock):
     pwd = PWD_DEFAULT
     while True:
-        msg = input(f'{pwd} $ ')
-        send_msg(sock, msg)
+        command_msg = input(f'{pwd} $ ')
+        send_msg(sock, command_msg)
         answer = receive_msg(sock)
-        if answer == 'server terminated' or answer == 'disconnected':
+        if answer == 'server terminated':
             sock.close()
             sys.exit(0)
-        if '<UPDATE_PWD>' in answer:
+        elif answer == 'disconnected' and command_msg == 'exit':
+            sys.exit(0)
+        elif answer == 'disconnected':
+            break
+        elif '<UPDATE_PWD>' in answer:
             answer = answer[len('<UPDATE_PWD>'):]
             pwd = answer
             continue
@@ -79,11 +85,13 @@ def client_loop(sock):
 def server_loop(client_sock):
     command_info = {
         'terminate': 'terminate the server',
-        'logout': 'disconnect from server',
+        'reconnect': 'reconnect to server',
         'beep': 'make a beep sound',
         'coninfo': 'display connection info',
         'bughelp': 'display this help',
         'cd': 'change directory remotely',
+        'exit': 'terminate client',
+        'cmd': 'send following to cmd even if special command'
     }
     pwd = PWD_DEFAULT
     while True:
@@ -96,7 +104,7 @@ def server_loop(client_sock):
                 client_sock.close()
                 print('terminating programm')
                 sys.exit(0)
-            elif msg == 'logout':
+            elif msg == 'reconnect' or msg == 'exit':
                 send_msg(client_sock, 'disconnected')
                 print(f'{client_sock.getpeername()} disconnected')
                 client_sock.close()
@@ -114,18 +122,20 @@ def server_loop(client_sock):
                 if path_change_cmd[0] == '/':
                     new_pwd = path_change_cmd[1:]
                 elif path_change_cmd[:2] == '..':
-                    new_pwd = pwd.replace('\\', '/').split('/')[:-1]
+                    new_pwd = pwd.replace('\\', '/').split('/')[:-2]
                     new_pwd = '\\'.join(new_pwd)
                 else:
                     new_pwd = pwd + path_change_cmd.replace('/', '\\')
                 if os.path.isdir(new_pwd):
-                    pwd = new_pwd
+                    pwd = new_pwd + '\\'
                     print(f'pwd changed to: {pwd}')
                     answer = f'<UPDATE_PWD>{pwd}'
                 else:
                     print(f'cd failed, {new_pwd} is not a valid directory')
                     answer = f'{new_pwd} is not a valid directory'
             else:
+                if answer[:3] == 'cmd':
+                    answer = answer[3:].strip()
                 answer = cmd_exec(f'{msg}', pwd)
             send_msg(client_sock, answer)
         except Exception as e:
@@ -141,11 +151,19 @@ def run():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     if opt['connect']:
-        target_addr = (opt['<host>'], opt['--port'])
-        print(f'connecting to {target_addr}')
-        sock.connect(target_addr)
-        print(f'connection establiched')
-        client_loop(sock)
+        while True:
+            target_addr = (opt['<host>'], opt['--port'])
+            print(f'connecting to {target_addr}')
+            sock.connect(target_addr)
+            print(f'connection establiched')
+            print('send authentication')
+            send_msg(sock, PASS_CODE)
+            if receive_msg(sock) == '<OK>':
+                print('authentication successfull')
+                client_loop(sock)
+            else:
+                print('authentication faild, terminating client')
+                sys.exit(1)
     elif opt['server']:
         server_addr = (socket.gethostbyname(socket.gethostname()), opt['--port'])
         print(f'creating Server on {server_addr}')
@@ -156,13 +174,20 @@ def run():
             print(f'server listening')
             client_sock = sock.accept()[0]
             print(f'connection accepted from {client_sock.getpeername()}')
-            thread = threading.Thread(target=server_loop, args=[client_sock])
-            threads.append(thread)
-            thread.start()
-            for t in threads:
-                if not t.is_alive():
-                    threads.remove(t)
-            print(f'{len(threads)} active connections')
+            print('authenticating')
+            if receive_msg(client_sock) == PASS_CODE:
+                print(f'valid authentication received from {client_sock.getpeername()}')
+                send_msg(client_sock, '<OK>')
+                thread = threading.Thread(target=server_loop, args=[client_sock])
+                threads.append(thread)
+                thread.start()
+                for t in threads:
+                    if not t.is_alive():
+                        threads.remove(t)
+                print(f'{len(threads)} active connection{"s" if len(threads) > 1 else ""}')
+            else:
+                print(f'invalid authentication received form {client_sock.getpeername()}, ignoring connection attempt')
+                send_msg(client_sock, '<NOT_OK>')
 
 
 if __name__ == '__main__':
