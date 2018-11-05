@@ -74,56 +74,61 @@ def client_loop(sock):
 
 
 def server_loop(client_sock):
+    command_info = {
+        'terminate': 'terminate the server',
+        'logout': 'disconnect from server',
+        'beep': 'make a beep sound',
+        'coninfo': 'display connection info',
+        'bughelp': 'display this help',
+        'cd': 'change directory remotely',
+    }
     pwd = PWD_DEFAULT
     while True:
-        msg = receive_msg(client_sock)
-        print(f'{msg} <- command received from {client_sock.getpeername()}')
-        answer = ''
-        command_info = {
-            'terminate': 'terminate the server',
-            'logout': 'disconnect from server',
-            'beep': 'make a beep sound',
-            'coninfo': 'display connection info',
-            'bughelp': 'display this help',
-            'cd': 'change directory remotely',
-        }
-        if msg == 'terminate':
-            send_msg(client_sock, 'server terminated')
-            client_sock.close()
-            print('terminating programm')
-            sys.exit(0)
-        elif msg == 'logout':
-            send_msg(client_sock, 'disconnected')
-            print(f'{client_sock.getpeername()} disconnected')
-            client_sock.close()
-            break
-        elif msg == 'beep':
-            cmd_beep()
-        elif msg == 'coninfo':
-            answer = f'{client_sock.getpeername()} {os.environ.get("COMPUTERNAME", "Computername not found")}'
-        elif msg == 'bughelp':
-            answer = 'Special Commands:\n' + \
-                     ''.join([f'  {commands}: {help}\n' for commands, help in zip(command_info.keys(), command_info.values())])
-        elif strip_split(msg)[0] == 'cd':
-            path_change_cmd = strip_split(msg)[1:][0]
-            new_pwd = ''
-            if path_change_cmd[0] == '/':
-                new_pwd = path_change_cmd[1:]
-            elif path_change_cmd[:2] == '..':
-                new_pwd = pwd.replace('\\', '/').split('/')[:-1]
-                new_pwd = '\\'.join(new_pwd)
+        try:
+            msg = receive_msg(client_sock)
+            print(f'{msg} <- command received from {client_sock.getpeername()}')
+            answer = ''
+            if msg == 'terminate':
+                send_msg(client_sock, 'server terminated')
+                client_sock.close()
+                print('terminating programm')
+                sys.exit(0)
+            elif msg == 'logout':
+                send_msg(client_sock, 'disconnected')
+                print(f'{client_sock.getpeername()} disconnected')
+                client_sock.close()
+                break
+            elif msg == 'beep':
+                cmd_beep()
+            elif msg == 'coninfo':
+                answer = f'{client_sock.getpeername()} {os.environ.get("COMPUTERNAME", "Computername not found")}'
+            elif msg == 'bughelp':
+                answer = 'Special Commands:\n' + \
+                         ''.join([f'  {commands}: {help}\n' for commands, help in zip(command_info.keys(), command_info.values())])
+            elif strip_split(msg)[0] == 'cd':
+                path_change_cmd = strip_split(msg)[1:][0]
+                new_pwd = ''
+                if path_change_cmd[0] == '/':
+                    new_pwd = path_change_cmd[1:]
+                elif path_change_cmd[:2] == '..':
+                    new_pwd = pwd.replace('\\', '/').split('/')[:-1]
+                    new_pwd = '\\'.join(new_pwd)
+                else:
+                    new_pwd = pwd + path_change_cmd.replace('/', '\\')
+                if os.path.isdir(new_pwd):
+                    pwd = new_pwd
+                    print(f'pwd changed to: {pwd}')
+                    answer = f'<UPDATE_PWD>{pwd}'
+                else:
+                    print(f'cd failed, {new_pwd} is not a valid directory')
+                    answer = f'{new_pwd} is not a valid directory'
             else:
-                new_pwd = pwd + path_change_cmd.replace('/', '\\')
-            if os.path.isdir(new_pwd):
-                pwd = new_pwd
-                print(f'pwd changed to: {pwd}')
-                answer = f'<UPDATE_PWD>{pwd}'
-            else:
-                print(f'cd failed, {new_pwd} is not a valid directory')
-                answer = f'{new_pwd} is not a valid directory'
-        else:
-            answer = cmd_exec(f'{msg}', pwd)
-        send_msg(client_sock, answer)
+                answer = cmd_exec(f'{msg}', pwd)
+            send_msg(client_sock, answer)
+        except Exception as e:
+            err_msg = f'Exception occoured: {str(e)}'
+            print(err_msg)
+            send_msg(client_sock, err_msg)
 
 
 def run():
