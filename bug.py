@@ -42,9 +42,12 @@ def strip_split(string, split_on=' '):
 
 def cmd_exec(command, working_dir=None, shell=True):
     cmd = strip_split(command)
-    db = ['cd', 'C:\\', '&&', 'dir']
     val = subprocess.run(cmd, stdin=subprocess.PIPE, shell=shell, stdout=subprocess.PIPE, cwd=working_dir, close_fds=True)
-    return val.stdout.decode('unicode_escape')
+    try:
+        return val.stdout.decode('unicode_escape', errors='strict')
+    except Exception as e:
+        print('encoding error Occoured. Ignoring.')
+        return val.stdout.decode('unicode_escape', errors='ignore')
 
 def receive_msg(socket, end_msg_identifier=END_MSG_IDF):
     msg = ''
@@ -65,7 +68,7 @@ def client_loop(sock):
         answer = receive_msg(sock)
         if answer == 'server terminated' or answer == 'disconnected':
             sock.close()
-            break
+            sys.exit(0)
         if '<UPDATE_PWD>' in answer:
             answer = answer[len('<UPDATE_PWD>'):]
             pwd = answer
@@ -127,10 +130,12 @@ def server_loop(client_sock):
             send_msg(client_sock, answer)
         except Exception as e:
             err_msg = f'Exception occoured: {str(e)}'
-            print(err_msg)
-            traceback.print_exception(type(e), e, e.__traceback__)
+            print_exception(e)
             send_msg(client_sock, err_msg)
 
+
+def print_exception(e):
+    traceback.print_exception(type(e), e, e.__traceback__)
 
 def run():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -154,8 +159,15 @@ def run():
             thread = threading.Thread(target=server_loop, args=[client_sock])
             threads.append(thread)
             thread.start()
+            for t in threads:
+                if not t.is_alive():
+                    threads.remove(t)
             print(f'{len(threads)} active connections')
 
 
 if __name__ == '__main__':
-    run()
+    while True:
+        try:
+            run()
+        except Exception as e:
+            traceback.print_exception(type(e), e, e.__traceback__)
