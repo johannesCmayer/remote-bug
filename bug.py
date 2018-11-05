@@ -39,7 +39,7 @@ def strip_split(string, split_on=' '):
     return words
 
 
-def cmd_exec(command, working_dir, shell=True):
+def cmd_exec(command, working_dir=None, shell=True):
     cmd = strip_split(command)
     db = ['cd', 'C:\\', '&&', 'dir']
     val = subprocess.run(cmd, stdin=subprocess.PIPE, shell=shell, stdout=subprocess.PIPE, cwd=working_dir, close_fds=True)
