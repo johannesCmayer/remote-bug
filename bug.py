@@ -4,6 +4,7 @@ import subprocess
 import sys
 import threading
 import os
+import traceback
 
 doc = """
 Usage:
@@ -43,12 +44,7 @@ def cmd_exec(command, working_dir=None, shell=True):
     cmd = strip_split(command)
     db = ['cd', 'C:\\', '&&', 'dir']
     val = subprocess.run(cmd, stdin=subprocess.PIPE, shell=shell, stdout=subprocess.PIPE, cwd=working_dir, close_fds=True)
-    try:
-        return val.stdout.strip().decode()
-    except Exception as e:
-        print(str(e))
-        print(val.stdout.strip())
-        return val.stdout.strip()
+    return val.stdout.decode('unicode_escape')
 
 def receive_msg(socket, end_msg_identifier=END_MSG_IDF):
     msg = ''
@@ -132,6 +128,7 @@ def server_loop(client_sock):
         except Exception as e:
             err_msg = f'Exception occoured: {str(e)}'
             print(err_msg)
+            traceback.print_exception(type(e), e, e.__traceback__)
             send_msg(client_sock, err_msg)
 
 
