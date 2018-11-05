@@ -13,14 +13,46 @@ Usage:
     bug server [options]
 
 Options:
-    --port=<PORT>  [default: 4613]
+    -p --port=<PORT>            [default: 4613]
+    -P --password=<PASSWORD>    [default: aoi416o8e4ia1oeuao1e86uau4ao5e4ua6oeu1a5au6oe4ua32o4eu5521a]
+    -h --help                   Display this
 """
 opt = docopt(doc)
 opt['--port'] = int(opt['--port'])
 
+
+def read_in_required_args():
+    if opt['connect'] == False and opt['server'] == False:
+        u_input = ''
+        while u_input != 'server' and u_input != 'connect':
+            u_input = input('Server or Client? server/connect\n')
+        opt[u_input] = True
+        if u_input == 'connect':
+            ip = ''
+            validate_ip = lambda ip: len(ip.split('.')) == 4 and len(ip) >= 7 and len(ip) <= 15
+            while not validate_ip(ip):
+                ip = input('ip: ')
+                opt['<host>'] = ip
+                if not validate_ip(ip):
+                    print('invalid ip')
+        port = input('port: ')
+        if port != '':
+            opt['--port'] = port
+        else:
+            print(f'use default of {opt["--port"]}')
+        password = input('password: ')
+        if password != '':
+            opt['--password'] = password
+        else:
+            print(f'use default of {opt["--password"]}')
+
+
+read_in_required_args()
+
 END_MSG_IDF = '<END>'
 PWD_DEFAULT = 'C:\\'
-PASS_CODE = '<aoi416o8e4ia1oeuao1e86uau4ao5e4ua6oeu1a5au6oe4ua32o4eu5521a>'
+PASS_CODE = f'<{opt["--password"]}>'
+
 
 def cmd_beep():
     code = 'echo •'
@@ -69,6 +101,7 @@ def client_loop(sock):
         send_msg(sock, command_msg)
         answer = receive_msg(sock)
         if answer == 'server terminated':
+            print('Server terminated')
             sock.close()
             sys.exit(0)
         elif answer == 'disconnected' and command_msg == 'exit':
@@ -103,7 +136,7 @@ def server_loop(client_sock):
                 send_msg(client_sock, 'server terminated')
                 client_sock.close()
                 print('terminating programm')
-                sys.exit(0)
+                os._exit(0)
             elif msg == 'reconnect' or msg == 'exit':
                 send_msg(client_sock, 'disconnected')
                 print(f'{client_sock.getpeername()} disconnected')
@@ -148,10 +181,13 @@ def print_exception(e):
     traceback.print_exception(type(e), e, e.__traceback__)
 
 def run():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    def get_socket():
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return sock
     if opt['connect']:
         while True:
+            sock = get_socket()
             target_addr = (opt['<host>'], opt['--port'])
             print(f'connecting to {target_addr}')
             sock.connect(target_addr)
@@ -165,6 +201,7 @@ def run():
                 print('authentication faild, terminating client')
                 sys.exit(1)
     elif opt['server']:
+        sock = get_socket()
         server_addr = (socket.gethostbyname(socket.gethostname()), opt['--port'])
         print(f'creating Server on {server_addr}')
         sock.bind(server_addr)
