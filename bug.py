@@ -5,6 +5,7 @@ import sys
 import threading
 import os
 import traceback
+import random
 
 doc = """
 Usage:
@@ -14,11 +15,43 @@ Usage:
 
 Options:
     -p --port=<PORT>            [default: 4613]
-    -P --password=<PASSWORD>    [default: aoi416o8e4ia1oeuao1e86uau4ao5e4ua6oeu1a5au6oe4ua32o4eu5521a]
+    -P --password=<PASSWORD>    [default: 'NOPW']
     -h --help                   Display this
 """
 opt = docopt(doc)
 opt['--port'] = int(opt['--port'])
+
+
+def get_prime_generator(start_num=0):
+    if start_num <= 1:
+        yield 1
+    if start_num <= 2:
+        yield 2
+    i = max(start_num, 3)
+    j = 2
+    while True:
+        if j >= i:
+            yield i
+            j = 2
+            i += 1
+        if i % j == 0:
+            j = 2
+            i += 1
+        j += 1
+
+
+def get_random_prime(min_oof=5, max_oof=7):
+    if min_oof + 1 > max_oof:
+        raise Exception(f'The lower magnitude factor ({min_oof}) need to be at least one less that the maximum magnitude factor ({max_oof}).')
+    return next(get_prime_generator(random.randint(10**(min_oof), 10**(max_oof))))
+
+
+class RSACrypter:
+    def __init__(self):
+        self.message = 10
+        self.e = 45
+        self.d = 7
+        self.n = 47
 
 
 def read_in_required_args():
@@ -51,7 +84,7 @@ read_in_required_args()
 
 END_MSG_IDF = '<END>'
 PWD_DEFAULT = 'C:\\'
-PASS_CODE = f'<{opt["--password"]}>'
+PASS_CODE = f'<{opt["--password"]}a96o5uoae56u4aoe6u546aoe54u9ao4eu65a4oe8u4aoe541u98ao4eu51ao98eu46>'
 
 
 def cmd_beep():
