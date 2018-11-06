@@ -191,18 +191,20 @@ def server_loop(client_sock):
                 new_pwd = ''
                 if path_change_cmd[0] == '/':
                     new_pwd = path_change_cmd[1:]
+                elif path_change_cmd[1] == ':':
+                    new_pwd = path_change_cmd
                 elif path_change_cmd[:2] == '..':
                     new_pwd = pwd.replace('\\', '/').split('/')[:-2]
                     new_pwd = '\\'.join(new_pwd)
                 else:
                     new_pwd = pwd + path_change_cmd.replace('/', '\\')
                 if os.path.isdir(new_pwd):
-                    pwd = new_pwd + '\\'
+                    pwd = (new_pwd + '\\').replace('\\\\', '\\')
                     print(f'pwd changed to: {pwd}')
                     answer = f'<UPDATE_PWD>{pwd}'
                 else:
-                    print(f'cd failed, {new_pwd} is not a valid directory')
-                    answer = f'{new_pwd} is not a valid directory'
+                    answer = f'cd failed, {new_pwd} is not a valid directory'
+                    print(answer)
             else:
                 if answer[:3] == 'cmd':
                     answer = answer[3:].strip()
