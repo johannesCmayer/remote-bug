@@ -1,2 +1,2 @@
 # Bug
-A programm to controll a computer remotely via command line.
+A programm to controll a computer remotely via cli.
