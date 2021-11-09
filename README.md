@@ -12,3 +12,5 @@ Options:
     -l --local                  Create a local server
     -h --help                   Display this
 ```
+
+Once connected type `bughelp` and return to show available commands.
