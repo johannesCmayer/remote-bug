@@ -1,2 +1,2 @@
 # remote-bug
-A programm to controll a computer remotely via cli.
+A program to control a computer remotely via CLI with basic functionality.
