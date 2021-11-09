@@ -13,4 +13,14 @@ Options:
     -h --help                   Display this
 ```
 
-Once connected use `bughelp` to show available commands.
+Once connected use `bughelp` to show available commands:
+```
+'shutdown': 'shutdown the server',
+'reconnect': 'reconnect to server',
+'beep': 'make a beep sound',
+'coninfo': 'display connection info',
+'bughelp': 'display this help',
+'cd': 'change directory remotely',
+'exit': 'terminate client',
+'cmd': 'send following string as a command'
+  ```
