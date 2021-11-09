@@ -15,14 +15,17 @@ Options:
 
 Once connected use `bughelp` to show available commands:
 ```
-'shutdown': 'shutdown the server',
-'reconnect': 'reconnect to server',
-'beep': 'make a beep sound',
-'coninfo': 'display connection info',
-'bughelp': 'display this help',
-'cd': 'change directory remotely',
-'exit': 'terminate client',
-'cmd': 'send following string as a command'
+Special Commands:
+  shutdown: shutdown the server
+  reconnect: reconnect to server
+  beep: make a beep sound
+  coninfo: display connection info
+  bughelp: display this help
+  cd: change directory remotely
+  exit: terminate client
+  cmd: run following string as command, even if special command.
+       e.g. cmd shutdown runs the command shutdown remotely
+       instead of shutting down the server
   ```
   
-<img src="remote-bug.gif" alt="gif" width="700"/>
+<img src="remote-bug-2.gif" alt="gif" width="700"/>
