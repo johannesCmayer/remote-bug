@@ -161,7 +161,7 @@ def server_loop(client_sock):
         'bughelp': 'display this help',
         'cd': 'change directory remotely',
         'exit': 'terminate client',
-        'cmd': 'send following to cmd even if special command'
+        'cmd': 'send following string as a command'
     }
     pwd = PWD_DEFAULT
     while True:
