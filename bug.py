@@ -7,6 +7,7 @@ import os
 import traceback
 import random
 import atexit
+import platform
 
 doc = """
 Usage:
@@ -25,7 +26,6 @@ opt['--port'] = int(opt['--port'])
 if opt['<host>'] == 'here':
     opt['<host>'] = socket.gethostbyname(socket.gethostname())
 
-
 def read_in_required_args():
     if opt['connect'] == False and opt['server'] == False:
         u_input = ''
@@ -42,7 +42,7 @@ def read_in_required_args():
                     print('invalid ip')
         port = input('port: ')
         if port != '':
-            opt['--port'] = port
+            opt['--port'] = int(port)
         else:
             print(f'use default of {opt["--port"]}')
         password = input('password: ')
@@ -55,7 +55,10 @@ def read_in_required_args():
 read_in_required_args()
 
 END_MSG_IDF = '<END>'
-PWD_DEFAULT = 'C:\\'
+if platform.system() == 'Windows': 
+    PWD_DEFAULT = 'C:\\' 
+else:
+    PWD_DEFAULT = '/'
 PASS_CODE = f'<{opt["--password"]}a96o5uoae56u4aoe6u546aoe54u9ao4eu65a4oe8u4aoe541u98ao4eu51ao98eu46>'
 
 
@@ -111,7 +114,7 @@ def strip_split(string, split_on=' '):
 
 def cmd_exec(command, working_dir=None, shell=True):
     cmd = strip_split(command)
-    val = subprocess.run(cmd, stdin=subprocess.PIPE, shell=shell, stdout=subprocess.PIPE, cwd=working_dir, close_fds=True)
+    val = subprocess.run(" ".join(cmd), stdin=subprocess.PIPE, shell=shell, stdout=subprocess.PIPE, cwd=working_dir, close_fds=True)
     try:
         return val.stdout.decode('unicode_escape', errors='strict')
     except Exception as e:
@@ -161,7 +164,9 @@ def server_loop(client_sock):
         'bughelp': 'display this help',
         'cd': 'change directory remotely',
         'exit': 'terminate client',
-        'cmd': 'send following to cmd even if special command'
+        'cmd': '''run following string as command, even if special command.
+       e.g. cmd shutdown runs the command shutdown remotely
+       instead of shutting down the server'''
     }
     pwd = PWD_DEFAULT
     while True:
@@ -187,6 +192,10 @@ def server_loop(client_sock):
                 answer = 'Special Commands:\n' + \
                          ''.join([f'  {commands}: {help}\n' for commands, help in zip(command_info.keys(), command_info.values())])
             elif strip_split(msg)[0] == 'cd':
+                if platform.system() == 'Windows': 
+                    slash = "\\"
+                else:
+                    slash = "/"
                 path_change_cmd = strip_split(msg)[1:][0]
                 new_pwd = ''
                 if path_change_cmd[0] == '/':
@@ -194,12 +203,12 @@ def server_loop(client_sock):
                 elif path_change_cmd[1] == ':':
                     new_pwd = path_change_cmd
                 elif path_change_cmd[:2] == '..':
-                    new_pwd = pwd.replace('\\', '/').split('/')[:-2]
-                    new_pwd = '\\'.join(new_pwd)
+                    new_pwd = pwd.replace(slash, '/').split('/')[:-2]
+                    new_pwd = slash.join(new_pwd)
                 else:
-                    new_pwd = pwd + path_change_cmd.replace('/', '\\')
+                    new_pwd = pwd + path_change_cmd.replace('/', slash)
                 if os.path.isdir(new_pwd):
-                    pwd = (new_pwd + '\\').replace('\\\\', '\\')
+                    pwd = (new_pwd + slash).replace(slash+slash, slash)
                     print(f'pwd changed to: {pwd}')
                     answer = f'<UPDATE_PWD>{pwd}'
                 else:
@@ -208,6 +217,7 @@ def server_loop(client_sock):
             else:
                 if answer[:3] == 'cmd':
                     answer = answer[3:].strip()
+                print(answer)
                 answer = cmd_exec(f'{msg}', pwd)
             send_msg(client_sock, answer)
         except Exception as e:
