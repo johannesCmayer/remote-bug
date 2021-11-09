@@ -13,4 +13,4 @@ Options:
     -h --help                   Display this
 ```
 
-Once connected type `bughelp` and return to show available commands.
+Once connected use `bughelp` to show available commands.
