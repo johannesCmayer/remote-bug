@@ -24,3 +24,4 @@ Once connected use `bughelp` to show available commands:
 'exit': 'terminate client',
 'cmd': 'send following string as a command'
   ```
+The server mode only works when run in Windows.
