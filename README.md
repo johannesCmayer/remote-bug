@@ -25,4 +25,4 @@ Once connected use `bughelp` to show available commands:
 'cmd': 'send following string as a command'
   ```
   
-<img src="remote-bug.gif" alt="gif" width="500"/>
+<img src="remote-bug.gif" alt="gif" width="700"/>
