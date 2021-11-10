@@ -1,5 +1,7 @@
 # remote-bug
-A program to control a computer remotely via CLI with basic functionality.
+A program to control a computer remotely via CLI with basic functionality, that I developed as a learning project. 
+
+This is not production ready. If you need something like this use SSH.
 
 ```
 Usage:
