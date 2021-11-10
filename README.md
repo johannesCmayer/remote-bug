@@ -28,4 +28,6 @@ Special Commands:
        instead of shutting down the server
   ```
   
+Both server and client should run on both Windows and Linux.
+  
 <img src="remote-bug-2.gif" alt="gif" width="700"/>
