@@ -1,4 +1,6 @@
 # remote-bug
+<img src="remote-bug-2.gif" alt="gif" width="700"/>
+
 A program to control a computer remotely via CLI with basic functionality, that I developed as a learning project. 
 
 ⚠ This is not production ready. If you need something like this use SSH!
@@ -31,5 +33,3 @@ Special Commands:
   ```
   
 Both server and client should run on both Windows and Linux.
-  
-<img src="remote-bug-2.gif" alt="gif" width="700"/>
